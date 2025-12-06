@@ -1107,9 +1107,21 @@ export const updateProperty: RequestHandler = async (req, res) => {
         const normalizedSubCategory = normSlugLocal(
           req.body.subCategory || property.subCategory,
         );
-        const subcategory = await db.collection("subcategories").findOne({
+        const priceTypeValue = normSlugLocal(req.body.priceType || property.priceType);
+
+        // Find parent category to disambiguate subcategories with same slug
+        let categoryFilter: any = { slug: priceTypeValue === "rent" ? "rent" : "buy" };
+        const parentCategory = await db.collection("categories").findOne(categoryFilter);
+
+        // Now look up subcategory under the correct parent category
+        const subcategoryFilter: any = {
           slug: normalizedSubCategory,
-        });
+        };
+        if (parentCategory) {
+          subcategoryFilter.categoryId = parentCategory._id?.toString();
+        }
+
+        const subcategory = await db.collection("subcategories").findOne(subcategoryFilter);
 
         if (subcategory) {
           // Now look up the mini-subcategory by slug and parent subcategoryId
