@@ -44,17 +44,13 @@ export default function Agricultural() {
     try {
       setLoading(true);
 
-      // First try to fetch the agricultural category with subcategories
-      const catResponse = await fetch(
-        "/api/categories/agricultural?withSub=true",
-      );
+      // Fetch the agricultural category
+      const catResponse = await fetch("/api/categories/agricultural");
 
       if (catResponse.ok) {
         const catData = await catResponse.json();
         if (catData.success && catData.data) {
-          const category = Array.isArray(catData.data)
-            ? catData.data[0]
-            : catData.data;
+          const category = catData.data;
 
           // If category has embedded subcategories, use the first one
           if (
@@ -70,6 +66,29 @@ export default function Agricultural() {
             if (firstSubcategory._id || firstSubcategory.id) {
               const subId = firstSubcategory._id || firstSubcategory.id;
               await fetchMiniSubcategoriesForSubcategory(subId);
+            }
+          } else {
+            // If no embedded subcategories, fetch them separately
+            const subResponse = await fetch(
+              "/api/categories/agricultural/subcategories",
+            );
+            if (subResponse.ok) {
+              const subData = await subResponse.json();
+              if (
+                subData.success &&
+                Array.isArray(subData.data) &&
+                subData.data.length > 0
+              ) {
+                const firstSubcategory = subData.data[0];
+                setSubcategories(subData.data);
+                setCurrentSubcategorySlug(firstSubcategory.slug);
+
+                // Now fetch mini-subcategories for the first subcategory
+                if (firstSubcategory._id || firstSubcategory.id) {
+                  const subId = firstSubcategory._id || firstSubcategory.id;
+                  await fetchMiniSubcategoriesForSubcategory(subId);
+                }
+              }
             }
           }
         }
