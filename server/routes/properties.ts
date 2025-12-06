@@ -469,9 +469,21 @@ export const createProperty: RequestHandler = async (req, res) => {
       try {
         // Get the subcategory ID first
         const normalizedSubCategory = normSlug(req.body.subCategory);
-        const subcategory = await db.collection("subcategories").findOne({
+        const priceTypeValue = normSlug(req.body.priceType);
+
+        // Find parent category to disambiguate subcategories with same slug
+        let categoryFilter: any = { slug: priceTypeValue === "rent" ? "rent" : "buy" };
+        const parentCategory = await db.collection("categories").findOne(categoryFilter);
+
+        // Now look up subcategory under the correct parent category
+        const subcategoryFilter: any = {
           slug: normalizedSubCategory,
-        });
+        };
+        if (parentCategory) {
+          subcategoryFilter.categoryId = parentCategory._id?.toString();
+        }
+
+        const subcategory = await db.collection("subcategories").findOne(subcategoryFilter);
 
         if (subcategory) {
           // Now look up the mini-subcategory by slug and parent subcategoryId
@@ -482,7 +494,22 @@ export const createProperty: RequestHandler = async (req, res) => {
 
           if (mini) {
             miniSubcategoryId = mini._id?.toString();
+            console.log("✅ Mini-subcategory resolved:", {
+              miniSubcategorySlug,
+              miniSubcategoryId,
+              priceType: priceTypeValue,
+            });
+          } else {
+            console.warn("Mini-subcategory not found:", {
+              slug: miniSubcategorySlug,
+              subcategoryId: subcategory._id?.toString(),
+            });
           }
+        } else {
+          console.warn("Subcategory not found:", {
+            slug: normalizedSubCategory,
+            priceType: priceTypeValue,
+          });
         }
       } catch (err) {
         console.warn(
