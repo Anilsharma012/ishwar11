@@ -207,7 +207,7 @@ export const getCategoryBySlug: RequestHandler = async (req, res) => {
       error: "Failed to fetch category",
     });
   }
-};  
+};
 
 // PUBLIC: Get subcategories by category slug
 export const getSubcategoriesByCategory: RequestHandler = async (req, res) => {

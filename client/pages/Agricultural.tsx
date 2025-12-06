@@ -45,9 +45,7 @@ export default function Agricultural() {
       setLoading(true);
 
       // Fetch the agricultural category
-      const catResponse = await fetch(
-        "/api/categories/agricultural",
-      );
+      const catResponse = await fetch("/api/categories/agricultural");
 
       if (catResponse.ok) {
         const catData = await catResponse.json();
@@ -76,7 +74,11 @@ export default function Agricultural() {
             );
             if (subResponse.ok) {
               const subData = await subResponse.json();
-              if (subData.success && Array.isArray(subData.data) && subData.data.length > 0) {
+              if (
+                subData.success &&
+                Array.isArray(subData.data) &&
+                subData.data.length > 0
+              ) {
                 const firstSubcategory = subData.data[0];
                 setSubcategories(subData.data);
                 setCurrentSubcategorySlug(firstSubcategory.slug);
