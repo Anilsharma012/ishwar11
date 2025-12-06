@@ -199,11 +199,31 @@ export const getProperties: RequestHandler = async (req, res) => {
       try {
         const normalizedMiniSlug = norm(miniSubcategory);
         const normalizedSubCat = norm(subCategory) || norm(category);
+        const normalizedPriceType = norm(priceType);
 
-        // First find the subcategory
-        const subcategoryDoc = await db.collection("subcategories").findOne({
-          slug: normalizedSubCat,
+        // Determine which parent category to use based on context
+        let parentCategorySlug = "buy"; // default
+        if (normalizedPriceType === "rent") {
+          parentCategorySlug = "rent";
+        } else if (category) {
+          // If category query param is "rent", use rent; if "buy", use buy
+          parentCategorySlug = norm(category) === "rent" ? "rent" : "buy";
+        }
+
+        // First find the parent category
+        const parentCategory = await db.collection("categories").findOne({
+          slug: parentCategorySlug,
         });
+
+        // Then find the subcategory under that parent category
+        const subcategoryFilter: any = {
+          slug: normalizedSubCat,
+        };
+        if (parentCategory) {
+          subcategoryFilter.categoryId = parentCategory._id?.toString();
+        }
+
+        const subcategoryDoc = await db.collection("subcategories").findOne(subcategoryFilter);
 
         if (subcategoryDoc) {
           // Then find the mini-subcategory
@@ -214,6 +234,11 @@ export const getProperties: RequestHandler = async (req, res) => {
 
           if (miniDoc) {
             filter.miniSubcategoryId = miniDoc._id?.toString();
+            console.log("✅ Filter: mini-subcategory resolved from slug", {
+              miniSubcategory: normalizedMiniSlug,
+              miniSubcategoryId: miniDoc._id?.toString(),
+              parentCategory: parentCategorySlug,
+            });
           }
         }
       } catch (err) {
